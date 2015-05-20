@@ -7,29 +7,21 @@ module Codes
     CODE_URL = "https://buy.itunes.apple.com/WebObjects/MZFinance.woa/wa/redeemLandingPage?code=[[code]]"
 
     def download(args)
+      app_id, app_identifier = app_identifiers(args)
+
       number_of_codes = args[:number_of_codes]
 
       code_or_codes = number_of_codes == 1 ? "code" : "codes"
       Helper.log.info "Downloading #{number_of_codes} promo #{code_or_codes}..." 
 
-
-      app_id = args[:apple_id]
-      app_id ||= (FastlaneCore::ItunesSearchApi.fetch_by_identifier(args[:app_identifier])['trackId'] rescue nil)
-
-      app_identifier = args[:app_identifier]
-
-      if app_id.to_i == 0 or app_identifier.to_s.length == 0
-        raise "Could not find app using the following information: #{args}. Maybe the app is not in the store. Pass the Apple ID of the app as well!".red
-      end
-
-      app = FastlaneCore::ItunesSearchApi.fetch(app_id)
-      platform = app_platform app
+      app = find_app(app_id, app_identifier)
 
       # Use Pathname because it correctly handles the distinction between relative paths vs. absolute paths
       output_file_path = Pathname.new(args[:output_file_path]) if args[:output_file_path]
       output_file_path ||= Pathname.new(File.join(Dir.getwd, "#{app_identifier || app_id}_codes.txt"))
       raise "Insufficient permissions to write to output file".red if File.exists?(output_file_path) and not File.writable?(output_file_path)
-      visit PROMO_URL.gsub("[[app_id]]", app_id.to_s).gsub("[[platform]]", platform)
+
+      visit promo_url(app)
 
       begin
         text_fields = wait_for_elements("input[type=text]")
@@ -60,6 +52,27 @@ module Codes
       puts codes
     end
 
+    def app_identifiers(args)
+      app_id = args[:apple_id]
+      app_identifier = args[:app_identifier]
+      Helper.log.warn ("Both apple_id (#{apple_id}) and app_identifier (#{app_identifier}) specified") if apple_id and app_identifier
+      app_id, app_identifier
+    end
+
+    def find_app(app_id, app_identifier)
+      app = FastlaneCore::ItunesSearchApi.fetch_by_identifier(app_identifier) if app_identifier
+      app ||= FastlaneCore::ItunesSearchApi.fetch(app_id)
+
+      # check we found the app
+      track_id = (app['trackId'] rescue nil)
+
+      if track_id.nil? || track_id.to_i == 0
+        raise "Could not find app using the following information: #{args}. Maybe the app is not in the store. Pass the Apple ID of the app as well!".red
+      end
+
+      app
+    end
+
     def download_format(codes, format, app)
         format=format.gsub(/%([a-z])/, "%{\\1}") # %c => %{c}
 
@@ -76,6 +89,10 @@ module Codes
         codes = codes.join("\n") + "\n"
     end
 
+    def promo_url(app)
+      PROMO_URL.gsub("[[app_id]]", app['trackId']).gsub("[[platform]]", app_platform(app))
+    end
+
     def app_platform(app)
       app['kind'] == "mac-software" ? "osx" : "ios"
     end
@@ -83,23 +100,16 @@ module Codes
     def display(args)
       Helper.log.info "Displaying remaining number of codes promo"
 
-      app_id = args[:apple_id]
-      app_id ||= (FastlaneCore::ItunesSearchApi.fetch_by_identifier(args[:app_identifier])['trackId'] rescue nil)
+      app_id, app_identifier = app_identifiers(args)
 
-      app_identifier = args[:app_identifier]
-
-      if app_id.to_i == 0 or app_identifier.to_s.length == 0
-        raise "Could not find app using the following information: #{args}. Maybe the app is not in the store. Pass the Apple ID of the app as well!".red
-      end
-
-      app = FastlaneCore::ItunesSearchApi.fetch(app_id)
-      platform = app_platform app
+      app = find_app(app_id, app_identifier)
 
       # Use Pathname because it correctly handles the distinction between relative paths vs. absolute paths
       output_file_path = Pathname.new(args[:output_file_path]) if args[:output_file_path]
       output_file_path ||= Pathname.new(File.join(Dir.getwd, "#{app_identifier || app_id}_codes_info.txt"))
       raise "Insufficient permissions to write to output file".red if File.exists?(output_file_path) and not File.writable?(output_file_path)
-      visit PROMO_URL.gsub("[[app_id]]", app_id.to_s).gsub("[[platform]]", platform)
+
+      visit promo_url(app)
 
       begin
         text_fields = wait_for_elements("input[type=text]")

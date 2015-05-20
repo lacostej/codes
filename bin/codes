@@ -97,8 +97,7 @@ class CodesApplication
       app_identifier = options.app_identifier
       app_identifier ||= ENV["CODES_APP_IDENTIFIER"]
       app_identifier ||= CredentialsManager::AppfileConfig.try_fetch_value(:app_identifier)
-      app_identifier ||= (FastlaneCore::ItunesSearchApi.fetch(apple_id)['bundleId'] rescue nil) if apple_id
-      app_identifier ||= ask("App Identifier (Bundle ID, e.g. com.krausefx.app): ")
+      app_identifier ||= ask("App Identifier (Bundle ID, e.g. com.krausefx.app): ") unless apple_id
       app_identifier
     end
 
