@@ -66,6 +66,7 @@ module Codes
       # check we found the app
       track_id = (app['trackId'] rescue nil)
 
+      # FIXME still unsure about these checks and the message
       if track_id.nil? || track_id.to_i == 0
         raise "Could not find app using the following information: #{args}. Maybe the app is not in the store. Pass the Apple ID of the app as well!".red
       end
