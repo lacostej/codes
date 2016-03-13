@@ -27,7 +27,7 @@ class CodesApplication
         username = username(options)
         number_of_codes = count(args)
         apple_id = apple_id(options)
-        app_identifier = bundle_id(options, apple_id)
+        app_identifier = bundle_id(options)
         format = download_format options
 
         Codes::CodesRunner.download(username: username, number_of_codes: number_of_codes, app_identifier: app_identifier, apple_id: apple_id, output_file_path: options.output_file, format: format)
@@ -96,14 +96,14 @@ class CodesApplication
     format
   end
 
-  def bundle_id(options, apple_id)
+  def bundle_id(options)
     app_identifier = options.app_identifier
-    app_identifier ||= ENV['CODES_APP_IDENTIFIER']
+    app_identifier || ENV['CODES_APP_IDENTIFIER']
   end
 
   def apple_id(options)
     apple_id = options.apple_id
-    apple_id ||= ENV['CODES_APP_ID']
+    apple_id || ENV['CODES_APP_ID']
   end
 end
 

@@ -1,7 +1,6 @@
 module Codes
   class ItunesConnect
 
-    # rubocop:disable Metrics/AbcSize
     def download(args)
       number_of_codes = args[:number_of_codes]
 
@@ -17,14 +16,14 @@ module Codes
 
       promocodes = @app.live_version.generate_promocodes!(number_of_codes)
 
-      request_date = Time.at(promocodes.effective_date/1000)
+      request_date = Time.at(promocodes.effective_date / 1000)
       codes = promocodes.codes
 
       format = args[:format]
       if format
         output = download_format(codes, format, request_date, app)
       else
-        output=codes.join("\n")
+        output = codes.join("\n")
       end
 
       bytes_written = File.write(output_file_path.to_s, output, mode: 'a+')
@@ -34,7 +33,6 @@ module Codes
       UI.success "Your codes (requested #{request_date}) were successfully downloaded:"
       puts output
     end
-    # rubocop:enable Metrics/AbcSize
 
     def download_format(codes, format, request_date, app)
       format = format.gsub(/%([a-z])/, '%{\\1}') # %c => %{c}
@@ -63,7 +61,7 @@ module Codes
       output_file_path ||= Pathname.new(File.join(Dir.getwd, "#{@app.apple_id}_codes_info.txt"))
       fail 'Insufficient permissions to write to output file'.red if File.exist?(output_file_path) && !File.writable?(output_file_path)
 
-      app_promocodes = @app.promocodes().first
+      app_promocodes = @app.promocodes.first
 
       remaining = app_promocodes.maximum_number_of_codes - app_promocodes.number_of_codes
 
